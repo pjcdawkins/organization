@@ -1,0 +1,73 @@
+<?php
+/**
+ * @file
+ * The Organization module.
+ */
+
+/**
+ * Implements hook_permission().
+ */
+function organization_permission() {
+  $permissions = array();
+  $permissions['organization: create'] = array(
+    'title' => t('Create organizations'),
+  );
+  $permissions['organization: update own'] = array(
+    'title' => t('Edit own organizations'),
+  );
+  $permissions['organization: delete own'] = array(
+    'title' => t('Delete own organizations'),
+  );
+  $permissions['organization: update any'] = array(
+    'title' => t('Edit any organization'),
+  );
+  $permissions['organization: delete any'] = array(
+    'title' => t('Delete any organization'),
+  );
+
+  return $permissions;
+}
+
+/**
+ * Implements hook_menu().
+ */
+function organization_menu() {
+  $items = array();
+  $items['user/%user/organizations/new'] = array(
+    'title' => 'Create new organization',
+    'access callback' => 'organization_access_create',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('organization_form', 1),
+    'file' => 'includes/organization.forms.inc',
+    'type' => MENU_LOCAL_ACTION,
+    'weight' => 4,
+  );
+
+  return $items;
+}
+
+/**
+ * Access callback for creating an organization.
+ *
+ * @return bool
+ *   TRUE if access is granted, FALSE otherwise.
+ */
+function organization_access_create() {
+  return user_access('organization: create') || user_access('administer users');
+}
+
+/**
+ * Implements hook_entity_info_alter().
+ */
+function organization_entity_info_alter(&$entity_info) {
+  $entity_info['user']['entity keys']['bundle'] = 'bundle';
+}
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function organization_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && !empty($plugin)) {
+    return "plugins/$plugin";
+  }
+}

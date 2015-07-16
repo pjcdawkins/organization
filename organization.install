@@ -1,0 +1,60 @@
+<?php
+/**
+ * @file
+ * Install, update, and uninstall functions for the Organization module.
+ *
+ * The 'bundle' functionality is inspired by the user_bundle module.
+ * @see https://www.drupal.org/project/user_bundle
+ */
+
+/**
+ * Implements hook_schema_alter().
+ */
+function organization_schema_alter(&$schema) {
+  $schema['users']['fields'] += array(
+    'bundle' => _organization_user_bundle_schema(),
+  );
+  $schema['users']['indexes'] += array(
+    'bundle' => array('bundle'),
+  );
+}
+
+/**
+ * Implements hook_install().
+ */
+function organization_install() {
+  $base_table = 'users';
+  if (!db_field_exists($base_table, 'bundle')) {
+    $spec = _organization_user_bundle_schema();
+    db_add_field($base_table, 'bundle', $spec);
+    db_add_index($base_table, 'bundle', array('bundle'));
+  }
+  _organization_ensure_anonymous_user_object();
+}
+
+/**
+ * Schema for the 'bundle' column on the 'users' table.
+ *
+ * @return array
+ *   A Drupal DB column schema array.
+ */
+function _organization_user_bundle_schema() {
+  return array(
+    'description' => 'The bundle of this user.',
+    'type' => 'varchar',
+    'length' => 32,
+    'not null' => TRUE,
+    'default' => 'user',
+  );
+}
+
+/**
+ * Ensure that the correct anonymous user object is set.
+ */
+function _organization_ensure_anonymous_user_object() {
+  $anon = variable_get('drupal_anonymous_user_object', new stdClass());
+  if (!isset($anon->bundle)) {
+    $anon->bundle = 'user';
+    variable_set('drupal_anonymous_user_object', $anon);
+  }
+}

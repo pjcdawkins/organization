@@ -1,0 +1,8 @@
+name = Organization
+description = Provides functionality for organizations, through a new user bundle
+core = 7.x
+
+dependencies[] = entity
+dependencies[] = ctools
+
+files[] = tests/organization.test
