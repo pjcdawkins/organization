@@ -3,6 +3,12 @@ description = Provides functionality for organizations, through a new user bundl
 core = 7.x
 
 dependencies[] = entity
+
+; Required for organization owner reference.
+dependencies[] = entityreference
+
+; Required for access control plugins.
 dependencies[] = ctools
 
+; Tests.
 files[] = tests/organization.test

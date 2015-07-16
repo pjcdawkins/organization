@@ -9,21 +9,23 @@
  */
 function organization_permission() {
   $permissions = array();
+  $permissions['organization: administer'] = array(
+    'title' => t('Administer organizations'),
+    'restrict access' => TRUE,
+  );
+
   $permissions['organization: create'] = array(
     'title' => t('Create organizations'),
   );
-  $permissions['organization: update own'] = array(
-    'title' => t('Edit own organizations'),
-  );
-  $permissions['organization: delete own'] = array(
-    'title' => t('Delete own organizations'),
-  );
-  $permissions['organization: update any'] = array(
-    'title' => t('Edit any organization'),
-  );
-  $permissions['organization: delete any'] = array(
-    'title' => t('Delete any organization'),
-  );
+
+  $actions = array('view' => 'View', 'update' => 'Edit', 'delete' => 'Delete');
+  foreach (array('own', 'any') as $rel) {
+    foreach ($actions as $op => $action) {
+      $permissions["organization: $op $rel"] = array(
+        'title' => t("$action $rel organizations"),
+      );
+    }
+  }
 
   return $permissions;
 }
@@ -33,14 +35,55 @@ function organization_permission() {
  */
 function organization_menu() {
   $items = array();
+  $items['organization/%organization'] = array(
+    'title callback' => 'organization_title',
+    'title arguments' => array(1),
+    'access callback' => 'entity_access',
+    'access arguments' => array('view', 'user', 1),
+    'page callback' => 'organization_view_single',
+    'page arguments' => array(1),
+  );
+  $items['organization/%organization/view'] = array(
+    'title' => 'View',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
+  );
+  $items['organization/%organization/edit'] = array(
+    'title' => 'Edit',
+    'access callback' => 'entity_access',
+    'access arguments' => array('update', 'user', 1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('organization_form', 1),
+    'file' => 'includes/organization.forms.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 1,
+  );
+  $items['organization/%organization/delete'] = array(
+    'title' => 'Delete',
+    'access callback' => 'entity_access',
+    'access arguments' => array('delete', 'user', 1),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('organization_delete_form', 1),
+    'file' => 'includes/organization.forms.inc',
+    'type' => MENU_CALLBACK,
+    'weight' => 2,
+  );
   $items['user/%user/organizations/new'] = array(
     'title' => 'Create new organization',
     'access callback' => 'organization_access_create',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('organization_form', 1),
+    'page arguments' => array('organization_form', NULL, 1),
     'file' => 'includes/organization.forms.inc',
     'type' => MENU_LOCAL_ACTION,
     'weight' => 4,
+  );
+  $items['admin/config/people/organizations'] = array(
+    'title' => 'Organizations',
+    'description' => 'Administer organizations',
+    'page callback' => 'system_admin_menu_block_page',
+    'access arguments' => array('organization: administer'),
+    'file' => 'system.admin.inc',
+    'file path' => drupal_get_path('module', 'system'),
   );
 
   return $items;
@@ -53,14 +96,157 @@ function organization_menu() {
  *   TRUE if access is granted, FALSE otherwise.
  */
 function organization_access_create() {
-  return user_access('organization: create') || user_access('administer users');
+  return user_access('organization: create') || user_access('organization: administer');
+}
+
+/**
+ * View a single organization.
+ *
+ * @param object $org
+ *   The organization entity.
+ * @param string $view_mode
+ *   The view mode - defaults to 'full'.
+ *
+ * @todo replace with entity_view_single() if that function is ever written
+ *
+ * @return array
+ *   A render array.
+ */
+function organization_view_single($org, $view_mode = 'full') {
+  return entity_view('user', array($org->uid => $org), $view_mode);
+}
+
+/**
+ * URI callback for an organization.
+ *
+ * @param object $org
+ *   The organization entity.
+ *
+ * @return array
+ *   An array containing 'path'.
+ */
+function organization_uri($org) {
+  return array('path' => 'organization/' . $org->uid);
+}
+
+/**
+ * Implements hook_username_alter().
+ */
+function organization_username_alter(&$name, $account) {
+  // We have to check the bundle property is set, because unfortunately Core and
+  // others sometimes use format_username() with a hand-crafted $account object.
+  if (isset($account->bundle) && $account->bundle == 'organization' && !empty($account->organization_name)) {
+    $wrapper = entity_metadata_wrapper('user', $account);
+    $name = $wrapper->organization_name->value();
+  }
+}
+
+/**
+ * Load callback for an organization.
+ *
+ * Intended as a menu load callback.
+ *
+ * @param int $uid
+ *   The organization ID.
+ *
+ * @return object|FALSE
+ *   An organization entity or FALSE if not found.
+ */
+function organization_load($uid) {
+  $org = user_load($uid);
+  if ($org && $org->bundle !== 'organization') {
+    return FALSE;
+  }
+
+  return $org;
+}
+
+/**
+ * Title callback for an organization.
+ *
+ * @param object $org
+ *   The organization entity.
+ *
+ * @return string
+ *   A title, not sanitized.
+ */
+function organization_title($org) {
+  return organization_get_name($org);
 }
 
 /**
  * Implements hook_entity_info_alter().
+ *
+ * @see organization_module_implements_alter()
  */
 function organization_entity_info_alter(&$entity_info) {
   $entity_info['user']['entity keys']['bundle'] = 'bundle';
+  if (!isset($entity_info['user']['bundles'])) {
+    $entity_info['user']['bundles'] = array();
+  }
+  $entity_info['user']['bundles'] += array(
+    'user' => array(
+      'label' => t('User'),
+    ),
+    'organization' => array(
+      'label' => t('Organization'),
+      'uri callback' => 'organization_uri',
+      'admin' => array(
+        'path' => 'admin/config/people/organizations',
+        'access arguments' => array('organization: administer'),
+      ),
+    ),
+  );
+
+  // Set an access callback for all user objects.
+  // @todo check that no other modules do this
+  $entity_info['user']['access callback'] = 'organization_user_entity_access';
+}
+
+/**
+ * Implements hook_module_implements_alter().
+ *
+ * Moves the hook_entity_info_alter() implementation to the bottom so it is
+ * invoked after the Entity API module.
+ *
+ * @see organization_entity_info_alter()
+ */
+function organization_module_implements_alter(&$implementations, $hook) {
+  if ($hook == 'entity_info_alter') {
+    $group = $implementations['organization'];
+    unset($implementations['organization']);
+    $implementations['organization'] = $group;
+  }
+}
+
+/**
+ * Generic entity access callback for users.
+ *
+ * Delegates to the default Entity API behavior for non-organizational users.
+ */
+function organization_user_entity_access($op, $entity = NULL, $account = NULL, $entity_type = NULL) {
+  if ($entity_type !== 'user') {
+    return FALSE;
+  }
+  if (!$entity || $entity->bundle !== 'organization') {
+    return entity_metadata_user_access($op, $entity, $account);
+  }
+  if (user_access('organization: administer', $account)) {
+    return TRUE;
+  }
+  if ($op == 'create') {
+    return user_access('organization: create', $account);
+  }
+  if (user_access('organization: ' . $op . ' any', $account)) {
+    return TRUE;
+  }
+
+  $wrapper = entity_metadata_wrapper('user', $entity);
+  $owner = $wrapper->organization_owner->value();
+  $account = $account ?: $GLOBALS['user'];
+  $own = $owner->uid == $account->uid;
+
+  return $own && user_access('organization: ' . $op . ' own', $account);
 }
 
 /**
@@ -69,5 +255,112 @@ function organization_entity_info_alter(&$entity_info) {
 function organization_ctools_plugin_directory($module, $plugin) {
   if ($module == 'ctools' && !empty($plugin)) {
     return "plugins/$plugin";
+  }
+}
+
+/**
+ * Get the name of an organization.
+ *
+ * @param object $org
+ */
+function organization_get_name($org) {
+  $wrapper = entity_metadata_wrapper('user', $org);
+  if (!empty($wrapper->organization_name)) {
+    return $wrapper->organization_name->value();
+  }
+
+  return $org->name;
+}
+
+/**
+ * Generate a new {users}.name property for an organization.
+ *
+ * @param object $org
+ *
+ * @return string
+ */
+function organization_generate_username($org) {
+  // Get the name, falling back to a random string if it's not available.
+  $name = organization_get_name($org) ?: user_password();
+
+  // Sanitize the name to remove illegal characters. See user_validate_name().
+  $name = preg_replace('/[^\x{80}-\x{F7} a-z0-9@_.\'-]+/i', '--', $name);
+
+  // Ensure the name will fit within the maximum length.
+  $name = truncate_utf8($name, USERNAME_MAX_LENGTH - 2);
+
+  // Ensure there are no duplicates.
+  for ($original = $name, $i = 1; organization_username_exists($name); $i++) {
+    $name = $original . '_' . $i;
+  }
+
+  return $name;
+}
+
+/**
+ * Fast check for whether a username exists.
+ *
+ * @param string $name
+ *
+ * @return bool
+ */
+function organization_username_exists($name) {
+  return db_query('SELECT COUNT(*) FROM {users} WHERE name = :name', array(
+    ':name' => $name
+  ))->fetchField() > 0;
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function organization_user_presave(&$edit, $account) {
+  if (!isset($account->bundle)) {
+    $account->bundle = 'user';
+  }
+  elseif ($account->bundle === 'organization') {
+    if (!isset($account->name)) {
+      $account->name = organization_generate_username($account);
+    }
+    if (!isset($account->mail)) {
+      $wrapper = entity_metadata_wrapper('user', $account);
+      if (!empty($wrapper->organization_owner)) {
+        $account->mail = $wrapper->organization_owner->value()->mail;
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Alter the user registration form.
+ */
+function organization_form_user_register_form_alter(&$form, &$form_state) {
+  // Ensure the form contains a user 'bundle', so that validation works.
+  $form += array(
+    'bundle' => array(
+      '#type' => 'value',
+      '#value' => !empty($form_state['#user']->bundle) ? $form_state['#user']->bundle : 'user',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_access().
+ *
+ * Ensure that normal users cannot change the organization owner.
+ */
+function organization_field_access($op, $field, $entity_type, $entity, $account) {
+  if ($entity_type === 'user' && $field['field_name'] === 'organization_owner') {
+    return $op === 'view' || user_access('organization: administer', $account);
+  }
+}
+
+/**
+ * Implements hook_user_view_alter().
+ */
+function organization_user_view_alter(&$build) {
+  if ($build['#bundle'] === 'organization') {
+    unset($build['summary']);
   }
 }

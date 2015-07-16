@@ -29,7 +29,38 @@ function organization_install() {
     db_add_field($base_table, 'bundle', $spec);
     db_add_index($base_table, 'bundle', array('bundle'));
   }
+
   _organization_ensure_anonymous_user_object();
+
+  // Create default fields and instances.
+  field_info_cache_clear();
+  _organization_ensure_fields();
+
+
+}
+
+/**
+ * Ensure installed fields and instances.
+ */
+function _organization_ensure_fields() {
+  module_load_include('inc', 'organization', 'includes/organization.fields');
+  foreach (organization_required_field_bases() as $field) {
+    if (!field_info_field($field['field_name'])) {
+      field_create_field($field);
+    }
+  }
+  foreach (organization_required_field_instances() as $instance) {
+    if (!field_info_instance($instance['entity_type'], $instance['field_name'], $instance['bundle'])) {
+      field_create_instance($instance);
+    }
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function organization_uninstall() {
+  field_attach_delete_bundle('user', 'organization');
 }
 
 /**

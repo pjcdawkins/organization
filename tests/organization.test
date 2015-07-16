@@ -4,60 +4,10 @@
  * Functional tests for the Organization module.
  */
 
-class OrganizationTestBase extends DrupalWebTestCase {
+class OrganizationEntityTestCase extends DrupalWebTestCase {
 
   /**
-   * Helper function to create an organization.
-   *
-   * @param string $name
-   *   The name of the organization.
-   * @param object $owner
-   *   The account owning the organization (default: a new user account with
-   *   requisite permissions).
-   *
-   * @return object
-   *   A saved organization entity.
-   */
-  protected function helperOrganizationCreate($name = NULL, $owner = NULL) {
-    static $default_owner;
-    if ($owner === NULL) {
-      if ($default_owner === NULL) {
-        $default_owner = $this->drupalCreateUser(array(
-          'organization: create',
-        ));
-      }
-      $owner = $default_owner;
-    }
-    $controller = entity_get_controller('user');
-    $account = $controller->create(array(
-      'name' => $name ?: $this->randomString(),
-      'bundle' => 'organization',
-      'status' => 1,
-    ));
-    $wrapper = entity_metadata_wrapper('user', $account);
-    $wrapper->organization_owner = $owner;
-    $controller->save($account);
-
-    // Reload the account so it gets processed correctly.
-    return $account;
-  }
-}
-
-class OrganizationCrudTestBase extends OrganizationTestBase {
-
-  /**
-   * Provide basic information about the test.
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Organization CRUD',
-      'description' => 'Basic entity create/read/update/delete tests for the Organization module.',
-      'group' => 'Organization',
-    );
-  }
-
-  /**
-   * Overrides parent::setUp().
+   * {@inheritdoc}
    */
   public function setUp() {
     $modules = array('organization');
@@ -65,11 +15,23 @@ class OrganizationCrudTestBase extends OrganizationTestBase {
   }
 
   /**
+   * Provide basic information about the test.
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'Organization Entity',
+      'description' => 'Entity CRUD (create/read/update/delete) tests for the Organization module.',
+      'group' => 'Organization',
+    );
+  }
+
+  /**
    * Create, update, and delete an organization.
    */
-  public function testElectionCrud() {
+  public function testOrganizationCrud() {
     $test_user = $this->drupalCreateUser(array(
       'organization: create',
+      'organization: view own',
       'organization: update own',
       'organization: delete own',
     ));
@@ -77,17 +39,19 @@ class OrganizationCrudTestBase extends OrganizationTestBase {
     $this->drupalLogin($test_user);
 
     $this->drupalGet('user/' . $test_user->uid . '/organizations');
-    $this->assertResponse(200, t('The page at user/%/organizations exists.'));
 
     // Check that the "Create new" link exists.
     $this->assertLink(t('Create new organization'));
 
     // Create a new organization with a random name.
-    $org = $this->helperOrganizationCreateUi($this->randomString(), $test_user);
+    $org = $this->helperOrganizationCreateUi($this->randomString() . '&>!', $test_user);
+
+    // Test that the organization name is provided properly.
+    $this->assertEqual(format_username($org), organization_get_name($org));
 
     // Update the organization's name.
-    $this->helperOrganizationUpdateUi($org, array(
-      'name' => $this->randomString(),
+    $org = $this->helperOrganizationUpdateUi($org, array(
+      'organization_name[' . LANGUAGE_NONE . '][0][value]' => $this->randomString() . '&>!',
     ));
 
     // Delete the organization.
@@ -96,15 +60,23 @@ class OrganizationCrudTestBase extends OrganizationTestBase {
 
   /**
    * Test creating a new organization via the UI.
+   *
+   * @param string $name
+   * @param object $owner
+   * @param array $properties
+   *
+   * @return object
    */
   protected function helperOrganizationCreateUi($name, $owner, array $properties = array()) {
-    $properties['name'] = $name;
+    $properties['organization_name[' . LANGUAGE_NONE . '][0][value]'] = $name;
     $this->drupalPost('user/' . $owner->uid . '/organizations/new', $properties, t('Save'));
     // The page should display that the new organization was saved.
     $this->assertRaw(
       t('The organization %name was saved.', array('%name' => $name)),
-      t('Organization created correctly.')
+      t('Organization created with success message.')
     );
+
+    $this->assertRaw(check_plain($name), t('Organization name displayed correctly'));
 
     // Load the newly created organization.
     $query = new EntityFieldQuery();
@@ -123,14 +95,16 @@ class OrganizationCrudTestBase extends OrganizationTestBase {
 
   /**
    * Test updating an existing organization via the UI.
+   *
+   * @return object
    */
   protected function helperOrganizationUpdateUi($org, array $edit) {
     $this->drupalPost('organization/' . $org->uid . '/edit', $edit, t('Save'));
     // The page should display that the organization was saved.
     $org = user_load($org->uid, TRUE);
     $this->assertRaw(
-      t('The organization %name has been updated.', array('%name' => format_username($org))),
-      t('Organization updated correctly.')
+      t('The organization %name was saved.', array('%name' => organization_get_name($org))),
+      t('Organization updated with success message.')
     );
 
     return $org;
@@ -143,11 +117,9 @@ class OrganizationCrudTestBase extends OrganizationTestBase {
     $this->drupalPost('organization/' . $org->uid . '/delete', array(), t('Delete'));
     // The page should display that the organization was deleted.
     $this->assertRaw(
-      t('The organization %name has been deleted.', array('%name' => format_username($org))),
-      t('Organization deleted successfully.')
+      t('The organization %name was deleted.', array('%name' => organization_get_name($org))),
+      t('Organization deleted with success message.')
     );
-    // Test that the user was redirected to an existing page after deleting.
-    $this->assertResponse(200, t('Redirected to an existent page after deleting.'));
   }
 
 }
