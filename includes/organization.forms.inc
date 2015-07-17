@@ -87,5 +87,8 @@ function organization_delete_form_submit(&$form, &$form_state) {
 
   drupal_set_message(t('The organization %name was deleted.', array('%name' => organization_get_name($org))));
 
-  $form_state['redirect'] = 'user/' . $org->uid . '/organizations';
+  if (!isset($_GET['destination'])) {
+    $owner = organization_get_owner($org);
+    $form_state['redirect'] = 'user/' . $owner->uid . '/organizations';
+  }
 }

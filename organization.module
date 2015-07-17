@@ -242,9 +242,8 @@ function organization_user_entity_access($op, $entity = NULL, $account = NULL, $
     return TRUE;
   }
 
-  $wrapper = entity_metadata_wrapper('user', $entity);
-  $owner = $wrapper->organization_owner->value();
   $account = $account ?: $GLOBALS['user'];
+  $owner = organization_get_owner($entity);
   $own = $owner->uid == $account->uid;
 
   return $own && user_access('organization: ' . $op . ' own', $account);
@@ -260,6 +259,21 @@ function organization_ctools_plugin_directory($module, $plugin) {
 }
 
 /**
+ * Get the owner of an organization.
+ *
+ * @param object $org
+ *   The organization entity.
+ *
+ * @return object
+ *   The user account of the organization's owner.
+ */
+function organization_get_owner($org) {
+  return entity_metadata_wrapper('user', $org)
+    ->organization_owner
+    ->value();
+}
+
+/**
  * Get the name of an organization.
  *
  * @param object $org
@@ -272,6 +286,22 @@ function organization_get_name($org) {
   }
 
   return $org->name;
+}
+
+/**
+ * Implements hook_user_presave().
+ */
+function organization_user_presave(&$edit, $account) {
+  // For normal users, ensure the user account has a bundle set.
+  if (!isset($account->bundle)) {
+    $account->bundle = 'user';
+  }
+  // For organizations, ensure a name is set.
+  elseif ($account->bundle === 'organization') {
+    if (!isset($account->name)) {
+      $account->name = organization_generate_username($account);
+    }
+  }
 }
 
 /**
@@ -315,21 +345,6 @@ function organization_username_exists($name) {
   return db_query('SELECT COUNT(*) FROM {users} WHERE name = :name', array(
     ':name' => $name,
   ))->fetchField() > 0;
-}
-
-/**
- * Implements hook_user_presave().
- */
-function organization_user_presave(&$edit, $account) {
-  if (!isset($account->bundle)) {
-    $account->bundle = 'user';
-  }
-  elseif ($account->bundle === 'organization') {
-    // Create a username for the organization.
-    if (!isset($account->name)) {
-      $account->name = organization_generate_username($account);
-    }
-  }
 }
 
 /**
