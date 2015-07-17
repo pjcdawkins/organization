@@ -60,7 +60,16 @@ function _organization_ensure_fields() {
  * Implements hook_uninstall().
  */
 function organization_uninstall() {
+  // Notify the Field module that the bundle has been deleted.
   field_attach_delete_bundle('user', 'organization');
+
+  // Delete all organizations.
+  db_delete('users')
+    ->condition('bundle', 'organization')
+    ->execute();
+
+  // The bundle column is not deleted here, as it may have been added by another
+  // module (such as user_bundle).
 }
 
 /**

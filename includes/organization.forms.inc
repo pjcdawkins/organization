@@ -13,6 +13,7 @@ function organization_form($form, &$form_state, $org = NULL, $owner = NULL) {
   if (!is_object($org)) {
     $org = entity_create('user', array(
       'bundle' => 'organization',
+      'status' => 1,
     ));
     $organization_wrapper = entity_metadata_wrapper('user', $org);
     $organization_wrapper->organization_owner = $owner ?: $GLOBALS['user'];

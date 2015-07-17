@@ -113,7 +113,9 @@ function organization_access_create() {
  *   A render array.
  */
 function organization_view_single($org, $view_mode = 'full') {
-  return entity_view('user', array($org->uid => $org), $view_mode);
+  $entities = array($org->uid => $org);
+
+  return entity_view('user', $entities, $view_mode);
 }
 
 /**
@@ -199,7 +201,6 @@ function organization_entity_info_alter(&$entity_info) {
   );
 
   // Set an access callback for all user objects.
-  // @todo check that no other modules do this
   $entity_info['user']['access callback'] = 'organization_user_entity_access';
 }
 
@@ -318,41 +319,82 @@ function organization_user_presave(&$edit, $account) {
     $account->bundle = 'user';
   }
   elseif ($account->bundle === 'organization') {
+    // Create a username for the organization.
     if (!isset($account->name)) {
       $account->name = organization_generate_username($account);
-    }
-    if (!isset($account->mail)) {
-      $wrapper = entity_metadata_wrapper('user', $account);
-      if (!empty($wrapper->organization_owner)) {
-        $account->mail = $wrapper->organization_owner->value()->mail;
-      }
     }
   }
 }
 
 /**
- * Implements hook_form_FORM_ID_alter().
- *
- * Alter the user registration form.
+ * Implements hook_user_load().
  */
-function organization_form_user_register_form_alter(&$form, &$form_state) {
-  // Ensure the form contains a user 'bundle', so that validation works.
-  $form += array(
-    'bundle' => array(
-      '#type' => 'value',
-      '#value' => !empty($form_state['#user']->bundle) ? $form_state['#user']->bundle : 'user',
-    ),
-  );
+function organization_user_load($users) {
+  foreach ($users as $account) {
+    if ($account->bundle === 'organization') {
+      // Set the organization's real e-mail address.
+      $wrapper = entity_metadata_wrapper('user', $account);
+      $account->mail = $wrapper->organization_mail->raw();
+    }
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Alter the user registration and cancel form.
+ */
+function organization_form_alter(&$form, &$form_state, $form_id) {
+  switch ($form_id) {
+    case 'user_register_form':
+    case 'user_profile_form':
+      // Ensure the form contains a user 'bundle', so that validation works.
+      $form += array(
+        'bundle' => array(
+          '#type' => 'value',
+          '#value' => !empty($form_state['#user']->bundle) ? $form_state['#user']->bundle : 'user',
+        ),
+      );
+    break;
+  }
 }
 
 /**
  * Implements hook_field_access().
- *
- * Ensure that normal users cannot change the organization owner.
  */
 function organization_field_access($op, $field, $entity_type, $entity, $account) {
-  if ($entity_type === 'user' && $field['field_name'] === 'organization_owner') {
-    return $op === 'view' || user_access('organization: administer', $account);
+  if ($entity_type === 'user') {
+    switch ($field['field_name']) {
+      // Ensure that normal users cannot change the organization owner.
+      case 'organization_owner':
+        return $op === 'view' || user_access('organization: administer', $account);
+
+      // Ensure that non-owners cannot view the organization e-mail address.
+      case 'organization_mail':
+        if ($op === 'view') {
+          return entity_access('update', 'user', $entity, $account);
+        }
+        break;
+    }
+  }
+}
+
+/**
+ * Implements hook_field_attach_validate().
+ */
+function organization_field_attach_validate($entity_type, $entity, &$errors) {
+  // Validate e-mail addresses in the organization_mail field.
+  if ($entity_type === 'user' && !empty($entity->organization_mail)) {
+    foreach ($entity->organization_mail as $lang => $items) {
+      foreach ($items as $delta => $item) {
+        if (!empty($item['value']) && !filter_var($item['value'], FILTER_VALIDATE_EMAIL)) {
+          $errors['organization_mail'][$lang][$delta][] = array(
+            'error' => 'organization_invalid_mail',
+            'message' => t('Invalid e-mail address: %mail', array('%mail' => $item['value'])),
+          );
+        }
+      }
+    }
   }
 }
 
@@ -360,7 +402,28 @@ function organization_field_access($op, $field, $entity_type, $entity, $account)
  * Implements hook_user_view_alter().
  */
 function organization_user_view_alter(&$build) {
-  if ($build['#bundle'] === 'organization') {
+  $account = $build['#account'];
+  if ($account->bundle === 'organization') {
+    // Permanently redirect to the organization page. This is needed despite the
+    // URI callback, because most modules hard-code user/$uid as the user page.
+    if ($_GET['q'] === 'user/' . $account->uid) {
+      $uri = organization_uri($account);
+      drupal_goto($uri['path'], $uri, 301);
+    }
+
+    // Remove the 'summary' (including 'History') from the organization page.
     unset($build['summary']);
+  }
+}
+
+/**
+ * Implements hook_user_login().
+ *
+ * Organizations should never be allowed to log in.
+ */
+function organization_user_login(&$edit, $account) {
+  if ($account->bundle === 'organization') {
+    watchdog('organization', 'Login attempt by organization @id', array('@id' => $account->id), WATCHDOG_ERROR);
+    user_logout();
   }
 }
