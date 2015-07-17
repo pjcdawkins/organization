@@ -4,6 +4,9 @@
  * Functional tests for the Organization module.
  */
 
+/**
+ * Entity CRUD tests.
+ */
 class OrganizationEntityTestCase extends DrupalWebTestCase {
 
   /**
@@ -62,10 +65,14 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
    * Test creating a new organization via the UI.
    *
    * @param string $name
+   *   The name of the new organization.
    * @param object $owner
+   *   The owner of the new organization.
    * @param array $properties
+   *   Any other properties (as form field keys) to set on the organization.
    *
    * @return object
+   *   The organization entity.
    */
   protected function helperOrganizationCreateUi($name, $owner, array $properties = array()) {
     $properties['organization_name[' . LANGUAGE_NONE . '][0][value]'] = $name;
@@ -96,7 +103,13 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
   /**
    * Test updating an existing organization via the UI.
    *
+   * @param object $org
+   *   The organization entity to update.
+   * @param array $edit
+   *   An array of form fields and values to set.
+   *
    * @return object
+   *   The updated organization entity.
    */
   protected function helperOrganizationUpdateUi($org, array $edit) {
     $this->drupalPost('organization/' . $org->uid . '/edit', $edit, t('Save'));
@@ -112,6 +125,9 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
 
   /**
    * Test deleting an organization via the UI.
+   *
+   * @param object $org
+   *   The organization entity to delete.
    */
   protected function helperOrganizationDeleteUi($org) {
     $this->drupalPost('organization/' . $org->uid . '/delete', array(), t('Delete'));

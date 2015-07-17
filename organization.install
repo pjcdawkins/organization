@@ -4,6 +4,7 @@
  * Install, update, and uninstall functions for the Organization module.
  *
  * The 'bundle' functionality is inspired by the user_bundle module.
+ *
  * @see https://www.drupal.org/project/user_bundle
  */
 
@@ -35,8 +36,6 @@ function organization_install() {
   // Create default fields and instances.
   field_info_cache_clear();
   _organization_ensure_fields();
-
-
 }
 
 /**

@@ -263,6 +263,7 @@ function organization_ctools_plugin_directory($module, $plugin) {
  * Get the name of an organization.
  *
  * @param object $org
+ *   The organization entity.
  */
 function organization_get_name($org) {
   $wrapper = entity_metadata_wrapper('user', $org);
@@ -277,8 +278,11 @@ function organization_get_name($org) {
  * Generate a new {users}.name property for an organization.
  *
  * @param object $org
+ *   The organization entity.
  *
  * @return string
+ *   A user name that is unique and valid according to Drupal Core's
+ *   requirements.
  */
 function organization_generate_username($org) {
   // Get the name, falling back to a random string if it's not available.
@@ -302,12 +306,14 @@ function organization_generate_username($org) {
  * Fast check for whether a username exists.
  *
  * @param string $name
+ *   The username to check.
  *
  * @return bool
+ *   TRUE if the username already exists, FALSE otherwise.
  */
 function organization_username_exists($name) {
   return db_query('SELECT COUNT(*) FROM {users} WHERE name = :name', array(
-    ':name' => $name
+    ':name' => $name,
   ))->fetchField() > 0;
 }
 
@@ -355,7 +361,7 @@ function organization_form_alter(&$form, &$form_state, $form_id) {
           '#value' => !empty($form_state['#user']->bundle) ? $form_state['#user']->bundle : 'user',
         ),
       );
-    break;
+      break;
   }
 }
 
