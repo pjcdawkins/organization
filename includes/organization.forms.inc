@@ -40,11 +40,20 @@ function organization_form($form, &$form_state, $org = NULL, $owner = NULL) {
     '#value' => t('Save'),
   );
 
-  $uid = $org_wrapper->organization_owner->uid->value();
-  $cancel_path = !empty($_GET['destination']) ? $_GET['destination'] : 'user/' . $uid . '/organizations';
-  $form['actions']['cancel'] = array(
-    '#markup' => l(t('Cancel'), $cancel_path),
-  );
+  if (isset($_GET['destination'])) {
+    $cancel_path = $_GET['destination'];
+  }
+  elseif (!empty($org->uid)) {
+    $cancel_path = 'organization/' . $org->uid;
+  }
+  elseif ($owner_uid = $org_wrapper->organization_owner->uid->value()) {
+    $cancel_path = 'user/' . $owner_uid . '/organizations';
+  }
+  if (isset($cancel_path)) {
+    $form['actions']['cancel'] = array(
+      '#markup' => l(t('Cancel'), $cancel_path),
+    );
+  }
 
   return $form;
 }
