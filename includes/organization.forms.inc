@@ -10,6 +10,11 @@
 function organization_form($form, &$form_state, $org = NULL, $owner = NULL) {
   form_load_include($form_state, 'inc', 'organization', 'includes/organization.forms');
 
+  $title = $org
+    ? t('Update organization @name', array('@name' => organization_get_name($org)))
+    : t('Create new organization');
+  drupal_set_title($title, PASS_THROUGH);
+
   if (!is_object($org)) {
     $org = entity_create('user', array(
       'bundle' => 'organization',
