@@ -448,3 +448,10 @@ function organization_user_login(&$edit, $account) {
     user_logout();
   }
 }
+
+/**
+ * Implements hook_views_api().
+ */
+function organization_views_api() {
+  return array('api' => 3);
+}
