@@ -200,6 +200,14 @@ function organization_entity_info_alter(&$entity_info) {
     ),
   );
 
+  // Add a Teaser view mode.
+  $entity_info['user']['view modes'] += array(
+    'teaser' => array(
+      'label' => t('Teaser'),
+      'custom settings' => TRUE,
+    ),
+  );
+
   // Set an access callback for all user objects.
   $entity_info['user']['access callback'] = 'organization_user_entity_access';
 }
@@ -454,4 +462,26 @@ function organization_user_login(&$edit, $account) {
  */
 function organization_views_api() {
   return array('api' => 3);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function organization_theme() {
+  return array(
+    'organization' => array(
+      'render element' => 'elements',
+      'template' => 'organization',
+      'file' => 'includes/organization.theme.inc',
+    ),
+  );
+}
+
+/**
+ * Implements hook_entity_view_alter().
+ */
+function organization_entity_view_alter(&$build, $type) {
+  if ($type === 'user' && isset($build['#bundle']) && $build['#bundle'] === 'organization') {
+    $build['#theme'] = 'organization';
+  }
 }
