@@ -210,6 +210,11 @@ function organization_entity_info_alter(&$entity_info) {
 
   // Set an access callback for all user objects.
   $entity_info['user']['access callback'] = 'organization_user_entity_access';
+
+  // Note: we cannot add a Views controller class for 'user' entities without
+  // also adding an entity API controller class. The latter causes all sorts of
+  // things to break. So we will handle Views the old-fashioned way, in
+  // organization_views_data_alter().
 }
 
 /**
