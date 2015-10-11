@@ -34,49 +34,49 @@ function organization_views_default_views() {
   $handler->display->display_options['pager']['options']['items_per_page'] = '10';
   $handler->display->display_options['style_plugin'] = 'table';
   $handler->display->display_options['style_options']['columns'] = array(
-      'uid' => 'uid',
-      'organization_name' => 'organization_name',
-      'name' => 'name',
-      'created' => 'created',
-      'status' => 'status',
+    'uid' => 'uid',
+    'organization_name' => 'organization_name',
+    'name' => 'name',
+    'created' => 'created',
+    'status' => 'status',
   );
   $handler->display->display_options['style_options']['default'] = 'created';
   $handler->display->display_options['style_options']['info'] = array(
-      'uid' => array(
-          'sortable' => 0,
-          'default_sort_order' => 'asc',
-          'align' => '',
-          'separator' => '',
-          'empty_column' => 0,
-      ),
-      'organization_name' => array(
-          'sortable' => 1,
-          'default_sort_order' => 'asc',
-          'align' => '',
-          'separator' => '',
-          'empty_column' => 0,
-      ),
-      'name' => array(
-          'sortable' => 1,
-          'default_sort_order' => 'asc',
-          'align' => '',
-          'separator' => '',
-          'empty_column' => 0,
-      ),
-      'created' => array(
-          'sortable' => 1,
-          'default_sort_order' => 'desc',
-          'align' => '',
-          'separator' => '',
-          'empty_column' => 0,
-      ),
-      'status' => array(
-          'sortable' => 0,
-          'default_sort_order' => 'asc',
-          'align' => '',
-          'separator' => '',
-          'empty_column' => 0,
-      ),
+    'uid' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'organization_name' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'name' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'created' => array(
+      'sortable' => 1,
+      'default_sort_order' => 'desc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
+    'status' => array(
+      'sortable' => 0,
+      'default_sort_order' => 'asc',
+      'align' => '',
+      'separator' => '',
+      'empty_column' => 0,
+    ),
   );
   /* Relationship: Entity Reference: Referenced Entity */
   $handler->display->display_options['relationships']['organization_owner_target_id']['id'] = 'organization_owner_target_id';
@@ -129,9 +129,9 @@ function organization_views_default_views() {
   $handler->display->display_options['filters']['status']['expose']['operator'] = 'status_op';
   $handler->display->display_options['filters']['status']['expose']['identifier'] = 'status';
   $handler->display->display_options['filters']['status']['expose']['remember_roles'] = array(
-      2 => '2',
-      1 => 0,
-      3 => 0,
+    2 => '2',
+    1 => 0,
+    3 => 0,
   );
   /* Filter criterion: User: Name (organization_name) */
   $handler->display->display_options['filters']['organization_name_value']['id'] = 'organization_name_value';
@@ -144,9 +144,9 @@ function organization_views_default_views() {
   $handler->display->display_options['filters']['organization_name_value']['expose']['operator'] = 'organization_name_value_op';
   $handler->display->display_options['filters']['organization_name_value']['expose']['identifier'] = 'organization_name_value';
   $handler->display->display_options['filters']['organization_name_value']['expose']['remember_roles'] = array(
-      2 => '2',
-      1 => 0,
-      3 => 0,
+    2 => '2',
+    1 => 0,
+    3 => 0,
   );
   /* Filter criterion: User: Name */
   $handler->display->display_options['filters']['uid']['id'] = 'uid';
@@ -160,9 +160,9 @@ function organization_views_default_views() {
   $handler->display->display_options['filters']['uid']['expose']['operator'] = 'uid_op';
   $handler->display->display_options['filters']['uid']['expose']['identifier'] = 'uid';
   $handler->display->display_options['filters']['uid']['expose']['remember_roles'] = array(
-      2 => '2',
-      1 => 0,
-      3 => 0,
+    2 => '2',
+    1 => 0,
+    3 => 0,
   );
 
   /* Display: Page */
@@ -178,10 +178,10 @@ function organization_views_default_views() {
 
   $view = new view();
   $view->name = 'organization_user';
-  $view->description = t('A list of the user\'s organizations');
+  $view->description = t("A list of the user's organizations");
   $view->tag = 'organization';
   $view->base_table = 'users';
-  $view->human_name = t('User\'s organizations');
+  $view->human_name = t("User's organizations");
   $view->core = 7;
   $view->api_version = '3.0';
   $view->disabled = FALSE; /* Edit this to true to make a default view disabled initially */
