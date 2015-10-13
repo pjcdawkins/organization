@@ -457,7 +457,10 @@ function organization_user_view_alter(&$build) {
  */
 function organization_user_login(&$edit, $account) {
   if ($account->bundle === 'organization') {
-    watchdog('organization', 'Login attempt by organization @id', array('@id' => $account->id), WATCHDOG_ERROR);
+    watchdog('organization', 'Login attempt by organization @name (@id)', array(
+      '@name' => organization_get_name($account),
+      '@id' => $account->uid,
+    ), WATCHDOG_ERROR);
     user_logout();
   }
 }
