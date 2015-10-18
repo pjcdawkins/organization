@@ -44,7 +44,7 @@ function organization_form($form, &$form_state, $org = NULL, $owner = NULL) {
     $cancel_path = $_GET['destination'];
   }
   elseif (!empty($org->uid)) {
-    $cancel_path = 'organization/' . $org->uid;
+    $cancel_path = 'user/' . $org->uid;
   }
   elseif ($owner_uid = $org_wrapper->organization_owner->uid->value()) {
     $cancel_path = 'user/' . $owner_uid . '/organizations';
@@ -80,7 +80,7 @@ function organization_form_submit(&$form, &$form_state) {
 
   drupal_set_message(t('The organization %name was saved.', array('%name' => organization_get_name($org))));
 
-  $form_state['redirect'] = 'organization/' . $org->uid;
+  $form_state['redirect'] = 'user/' . $org->uid;
 }
 
 /**
