@@ -94,7 +94,7 @@ function organization_views_default_views() {
   $handler->display->display_options['fields']['organization_name']['table'] = 'field_data_organization_name';
   $handler->display->display_options['fields']['organization_name']['field'] = 'organization_name';
   $handler->display->display_options['fields']['organization_name']['alter']['make_link'] = TRUE;
-  $handler->display->display_options['fields']['organization_name']['alter']['path'] = 'organization/[uid]';
+  $handler->display->display_options['fields']['organization_name']['alter']['path'] = 'user/[uid]';
   /* Field: User: Name */
   $handler->display->display_options['fields']['name']['id'] = 'name';
   $handler->display->display_options['fields']['name']['table'] = 'users';

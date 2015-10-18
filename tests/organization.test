@@ -112,7 +112,7 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
    *   The updated organization entity.
    */
   protected function helperOrganizationUpdateUi($org, array $edit) {
-    $this->drupalPost('organization/' . $org->uid . '/edit', $edit, t('Save'));
+    $this->drupalPost('user/' . $org->uid . '/edit', $edit, t('Save'));
     // The page should display that the organization was saved.
     $org = user_load($org->uid, TRUE);
     $this->assertRaw(
@@ -130,7 +130,7 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
    *   The organization entity to delete.
    */
   protected function helperOrganizationDeleteUi($org) {
-    $this->drupalPost('organization/' . $org->uid . '/delete', array(), t('Delete'));
+    $this->drupalPost('user/' . $org->uid . '/delete', array(), t('Delete'));
     // The page should display that the organization was deleted.
     $this->assertRaw(
       t('The organization %name was deleted.', array('%name' => organization_get_name($org))),

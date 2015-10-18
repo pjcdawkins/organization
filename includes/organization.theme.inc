@@ -20,5 +20,5 @@ function template_preprocess_organization(&$variables) {
 
   $variables['teaser'] = $variables['elements']['#view_mode'] === 'teaser';
   $variables['name'] = check_plain(organization_get_name($org));
-  $variables['path'] = 'organization/' . $org->uid;
+  $variables['path'] = 'user/' . $org->uid;
 }

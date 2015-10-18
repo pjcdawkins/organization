@@ -35,30 +35,7 @@ function organization_permission() {
  */
 function organization_menu() {
   $items = array();
-  $items['organization/%organization'] = array(
-    'title callback' => 'organization_title',
-    'title arguments' => array(1),
-    'access callback' => 'entity_access',
-    'access arguments' => array('view', 'user', 1),
-    'page callback' => 'organization_view_single',
-    'page arguments' => array(1),
-  );
-  $items['organization/%organization/view'] = array(
-    'title' => 'View',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => 0,
-  );
-  $items['organization/%organization/edit'] = array(
-    'title' => 'Edit',
-    'access callback' => 'entity_access',
-    'access arguments' => array('update', 'user', 1),
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('organization_form', 1),
-    'file' => 'includes/organization.forms.inc',
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 1,
-  );
-  $items['organization/%organization/delete'] = array(
+  $items['user/%organization/delete'] = array(
     'title' => 'Delete',
     'access callback' => 'entity_access',
     'access arguments' => array('delete', 'user', 1),
@@ -90,6 +67,45 @@ function organization_menu() {
 }
 
 /**
+ * Implements hook_menu_alter().
+ */
+function organization_menu_alter(&$items) {
+  foreach (organization_paths_to_block() as $path) {
+    $items[$path]['access callback'] = 'organization_access_block_orgs';
+  }
+}
+
+/**
+ * Find paths that should be restricted to users, not organizations.
+ *
+ * @return string[]
+ *   A list of user/%user/* paths that should not be for organizations.
+ */
+function organization_paths_to_block() {
+  $paths = array(
+    'user/%user/shortcuts',
+    'user/%user/cancel',
+    'user/%/organizations',
+  );
+  drupal_alter(__FUNCTION__, $paths);
+
+  return $paths;
+}
+
+/**
+ * Access callback for blocking access to 'user' paths for organizations.
+ *
+ * @return bool
+ *   TRUE if access is granted, FALSE otherwise.
+ */
+function organization_access_block_orgs() {
+  $uid = arg(1);
+  $account = is_numeric($uid) ? user_load($uid) : FALSE;
+
+  return $account && $account->bundle != 'organization';
+}
+
+/**
  * Access callback for creating an organization.
  *
  * @return bool
@@ -97,25 +113,6 @@ function organization_menu() {
  */
 function organization_access_create() {
   return user_access('organization: create') || user_access('organization: administer');
-}
-
-/**
- * View a single organization.
- *
- * @param object $org
- *   The organization entity.
- * @param string $view_mode
- *   The view mode - defaults to 'full'.
- *
- * @todo replace with entity_view_single() if that function is ever written
- *
- * @return array
- *   A render array.
- */
-function organization_view_single($org, $view_mode = 'full') {
-  $entities = array($org->uid => $org);
-
-  return entity_view('user', $entities, $view_mode);
 }
 
 /**
@@ -128,7 +125,7 @@ function organization_view_single($org, $view_mode = 'full') {
  *   An array containing 'path'.
  */
 function organization_uri($org) {
-  return array('path' => 'organization/' . $org->uid);
+  return array('path' => 'user/' . $org->uid);
 }
 
 /**
@@ -226,7 +223,7 @@ function organization_entity_info_alter(&$entity_info) {
  * @see organization_entity_info_alter()
  */
 function organization_module_implements_alter(&$implementations, $hook) {
-  if ($hook == 'entity_info_alter') {
+  if ($hook === 'entity_info_alter' || $hook === 'menu_alter') {
     $group = $implementations['organization'];
     unset($implementations['organization']);
     $implementations['organization'] = $group;
@@ -388,9 +385,19 @@ function organization_form_alter(&$form, &$form_state, $form_id) {
       $form += array(
         'bundle' => array(
           '#type' => 'value',
-          '#value' => !empty($form_state['#user']->bundle) ? $form_state['#user']->bundle : 'user',
+          '#value' => !empty($form_state['user']->bundle) ? $form_state['user']->bundle : 'user',
         ),
       );
+
+      if ($form_state['user']->bundle === 'organization') {
+        $form['#user_category'] = 'organization';
+        unset(
+          $form['account'],
+          $form['picture'],
+          $form['signature_settings'],
+          $form['actions']['cancel']
+        );
+      }
       break;
   }
 }
@@ -440,13 +447,6 @@ function organization_field_attach_validate($entity_type, $entity, &$errors) {
 function organization_user_view_alter(&$build) {
   $account = $build['#account'];
   if ($account->bundle === 'organization') {
-    // Permanently redirect to the organization page. This is needed despite the
-    // URI callback, because most modules hard-code user/$uid as the user page.
-    if ($_GET['q'] === 'user/' . $account->uid) {
-      $uri = organization_uri($account);
-      drupal_goto($uri['path'], $uri, 301);
-    }
-
     // Remove the 'summary' (including 'History') from the organization page.
     unset($build['summary']);
   }
