@@ -337,9 +337,11 @@ function organization_generate_username($org) {
   // Ensure the name will fit within the maximum length.
   $name = truncate_utf8($name, USERNAME_MAX_LENGTH - 2);
 
-  // Ensure there are no duplicates.
-  for ($original = $name, $i = 1; organization_username_exists($name); $i++) {
-    $name = $original . '_' . $i;
+  // If the name is new, then ensure there are no duplicates.
+  if ($name != $org->name) {
+    for ($original = $name, $i = 1; organization_username_exists($name); $i++) {
+      $name = $original . '_' . $i;
+    }
   }
 
   return $name;
