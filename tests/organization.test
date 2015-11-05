@@ -50,11 +50,11 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
     $org = $this->helperOrganizationCreateUi($this->randomString() . '&>!', $test_user);
 
     // Test that the organization name is provided properly.
-    $this->assertEqual(format_username($org), organization_get_name($org));
+    $this->assertEqual(format_username($org), $org->name);
 
     // Update the organization's name.
     $org = $this->helperOrganizationUpdateUi($org, array(
-      'organization_name[' . LANGUAGE_NONE . '][0][value]' => $this->randomString() . '&>!',
+      'name' => $this->randomString() . '&>!',
     ));
 
     // Delete the organization.
@@ -75,7 +75,7 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
    *   The organization entity.
    */
   protected function helperOrganizationCreateUi($name, $owner, array $properties = array()) {
-    $properties['organization_name[' . LANGUAGE_NONE . '][0][value]'] = $name;
+    $properties['name'] = $name;
     $this->drupalPost('user/' . $owner->uid . '/organizations/new', $properties, t('Save'));
     // The page should display that the new organization was saved.
     $this->assertRaw(
@@ -89,7 +89,7 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
     $query = new EntityFieldQuery();
     $query->entityCondition('entity_type', 'user')
           ->entityCondition('bundle', 'organization')
-          ->fieldCondition('organization_name', 'value', $name)
+          ->propertyCondition('name', $name)
           ->fieldCondition('organization_owner', 'target_id', $owner->uid);
     $result = $query->execute();
     $ids = array_keys($result['user']);
@@ -112,11 +112,11 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
    *   The updated organization entity.
    */
   protected function helperOrganizationUpdateUi($org, array $edit) {
-    $this->drupalPost('organization/' . $org->uid . '/edit', $edit, t('Save'));
+    $this->drupalPost('user/' . $org->uid . '/edit', $edit, t('Save'));
     // The page should display that the organization was saved.
     $org = user_load($org->uid, TRUE);
     $this->assertRaw(
-      t('The organization %name was saved.', array('%name' => organization_get_name($org))),
+      t('The changes have been saved.'),
       t('Organization updated with success message.')
     );
 
@@ -130,10 +130,10 @@ class OrganizationEntityTestCase extends DrupalWebTestCase {
    *   The organization entity to delete.
    */
   protected function helperOrganizationDeleteUi($org) {
-    $this->drupalPost('organization/' . $org->uid . '/delete', array(), t('Delete'));
+    $this->drupalPost('user/' . $org->uid . '/delete', array(), t('Delete'));
     // The page should display that the organization was deleted.
     $this->assertRaw(
-      t('The organization %name was deleted.', array('%name' => organization_get_name($org))),
+      t('The organization %name was deleted.', array('%name' => $org->name)),
       t('Organization deleted with success message.')
     );
   }

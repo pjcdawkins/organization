@@ -19,6 +19,6 @@ function template_preprocess_organization(&$variables) {
   field_attach_preprocess('user', $org, $variables['elements'], $variables);
 
   $variables['teaser'] = $variables['elements']['#view_mode'] === 'teaser';
-  $variables['name'] = check_plain(organization_get_name($org));
-  $variables['path'] = 'organization/' . $org->uid;
+  $variables['name'] = check_plain($org->name);
+  $variables['path'] = 'user/' . $org->uid;
 }

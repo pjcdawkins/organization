@@ -2,13 +2,11 @@ name = Organization
 description = Provides functionality for organizations, through a new user bundle
 core = 7.x
 
+dependencies[] = chain_menu_access
 dependencies[] = entity
-
-; Required for organization owner reference.
 dependencies[] = entityreference
-
-; Required for access control plugins.
 dependencies[] = ctools
+dependencies[] = views
 
 ; Tests.
 files[] = tests/organization.test
